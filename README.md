@@ -20,6 +20,14 @@
 - 403 Embargo → 自动替换为 DOI
 - 404 失效 → 自动删除并标注
 - 输出带链接验证结果附录
+- **双输出**：同时生成飞书文档 + 直接回复 Markdown
+
+## 输出方式
+
+1. **飞书文档**（`feishu_create_doc`）：完整版，含所有验证附录
+2. **直接回复**（Markdown）：对话内即时展示，结构化摘要
+
+两个输出同时进行，缺一不可。
 
 ## 使用方式
 
@@ -32,7 +40,7 @@
 
 - 链接验证：`curl -s -o /dev/null -w "%{http_code}" -L --max-time 10`
 - 出版检索：PubMed/PMC + 出版社官网
-- 输出格式：飞书云文档（Markdown）
+- 输出格式：飞书云文档（Markdown）+ 直接回复 Markdown
 
 ## License
 
