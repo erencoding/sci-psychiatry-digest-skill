@@ -1,15 +1,18 @@
 ---
 name: sci-psychiatry-digest
-description: 收集 SCI 一区（JCR Q1）心理学/精神病学领域的最新高影响因子文献，自动整理成含「文章标题 / 期刊 / 影响因子 / 源链接 / 中文简介」的结构化清单，并以飞书文档形式输出。所有链接在输出前必须经过验证，确保可正常访问。触发词示例：「给我 SCI 一区心理精神科的文章」「心理学 Q1 期刊最新论文」「精神病学高 IF 文献速递」「中科院一区心理精神科文献」。
-version: "2.2"
+description: 收集 SCI 一区（JCR Q1）心理学/精神病学领域的最新高影响因子文献，自动整理成含「文章标题 / 期刊 / 影响因子 / 源链接 / 中文简介 + 中英双语全文」的结构化清单，并以飞书文档形式输出。所有链接在输出前必须经过验证，确保可正常访问。触发词示例：「给我 SCI 一区心理精神科的文章」「心理学 Q1 期刊最新论文」「精神病学高 IF 文献速递」「中科院一区心理精神科文献」。
+version: "2.3"
 author: Judy (朱迪)
 license: MIT
 ---
 
-# SCI 一区心理精神科文献速递 Skill (v2.2)
+# SCI 一区心理精神科文献速递 Skill (v2.3)
 
 ## 目标
-为用户一次性产出一份结构化、可复制的 **SCI 一区（JCR Q1 / 中科院 1 区）心理学/精神病学** 高影响因子文献清单。
+为用户一次性产出一份结构化、可复制的 **SCI 一区（JCR Q1 / 中科院 1 区）心理学/精神病学** 高影响因子文献清单，每篇文章包含：
+- 基本信息（标题 / 期刊 / IF / 发表时间 / 链接）
+- 中文简介 + 英文全文 + 中文全文
+- 使用飞书原生折叠模块，中英双语折叠展开
 
 > ### 🚫 绝对禁止事项
 > 1. **禁止虚假信息**：不得编造文章标题、作者、期刊名、IF、分区、链接或内容简介。
@@ -41,11 +44,7 @@ license: MIT
 | 细分方向 | 综合（不限） | 抑郁 / 双相 / 精神分裂 / 儿童青少年 / 神经影像 / 心理治疗 / 成瘾 / 创伤 / 焦虑 / 认知障碍 |
 | 分区体系 | 双体系（均收录） | 仅 JCR Q1 / 仅中科院 1 区 / 双体系均收录 |
 | 时间窗 | 近 1 年 | 近 3 个月 / 近半年 / 近 1 年 / 近 2 年 |
-| 数量 | 10 篇 | 5 / 10 / 15 / 20 篇 |
-
-**分区体系说明**：
-- **JCR Q1**：按 Journal Citation Reports 分区，精神病学/神经科学领域 Q1 期刊
-- **中科院 1 区**：按中科院期刊分区表，心理学/精神病学 1 区 Top 期刊
+| 每模块数量 | 15 篇 | 每模块 10 / 15 / 20 篇 |
 
 ---
 
@@ -92,11 +91,8 @@ license: MIT
 | 发表时间 | 必填 | 期刊官方出版日期（年/月） |
 | 源链接 | 必填 | PMC 链接 或 DOI，格式必须可点击 |
 | 中文简介 | 必填 | 含研究设计、样本、主要发现、意义 |
-
-**检索工具优先级**：
-1. PubMed/PMC 搜索（`web_fetch`）：结构化、摘要完整
-2. 出版社官网（如 Nature.com、Lancet.com）：PMC embargo 时使用
-3. DOI 链接：`https://doi.org/xxx` 作为兜底
+| 英文全文 | 必填 | PubMed/PMC 抓取原始 Abstract/全文 |
+| 中文全文 | 必填 | 机器翻译，专业学术角度 |
 
 ---
 
@@ -105,7 +101,6 @@ license: MIT
 **在写入文档之前，必须验证每一条链接：**
 
 ```bash
-# 批量验证链接
 for url in "PMC_URL_1" "PMC_URL_2" "DOI_URL"; do
   code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 10 "$url")
   echo "$code $url"
@@ -122,10 +117,6 @@ done
 | 30x Redirect | 🔄 跟随重定向取最终 URL |
 | Timeout/Error | ❌ 链接不可用，**必须删除**或标注"需手动访问" |
 
-**DOI 替换规则**：
-- 如果 PMC 返回 403 但有 DOI：`https://doi.org/{DOI}` 替换原 PMC 链接
-- DOI 也不可用时：删除该条链接并在回复中说明
-
 ---
 
 ### Step 5 · 输出（同时输出到飞书文档 + 直接回复）
@@ -134,13 +125,17 @@ done
 
 #### 5A · 飞书文档格式（精确模板）
 
+**标题**：`SCI 一区心理精神科文献速递 · {YYYY-MM-DD}（{模块名} · N 篇）`
+
+**文档结构**：
+
 ```
 # SCI 一区心理精神科文献速递 · {YYYY-MM-DD}
 
 > **数据来源说明**：本文献清单分为两个独立模块，分别按照**JCR Q1 分区**和**中科院 1 区（CAS 1）分区**两个体系收录，两个体系分类标准和期刊覆盖范围存在差异，文献不重复。
 > **IF 版本**：以 2024 JCR / 2025 发布版本为准
 > **时间窗**：{时间范围}
-> **共收录**：N 篇
+> **共收录**：模块一 N 篇 + 模块二 N 篇
 
 ---
 
@@ -157,46 +152,30 @@ done
 - **发表时间**：{YYYY Mon}
 - **期刊**：{期刊名}（中科院 1 区，IF {xx}）
 - **链接**：[PMC ID](URL) 或 [DOI](URL)
-- **简介**：{中文简介}**意义**：{意义}
+- **简介**：{中文简介}
+
+<block type="details"><properties collapsed="false"><text>▼ 英文原文（点击展开）</text></properties><children>
+{block content in English - full text from PMC abstract/body}
+</children></block>
+
+<block type="details"><properties collapsed="true"><text>▼ 中文全文（点击展开）</text></properties><children>
+{block content in Chinese - translated from English}
+</children></block>
 
 ---
-
-# 【模块二】JCR Q1 心理精神科期刊
-
-> **说明**：以下期刊按 JCR Q1 分区收录，与中科院 1 区分类体系不同。
-> **收录**：N 篇
-
----
-
-## 一、{期刊名}（IF ~{xx}，JCR Q1）
-
-### N.N {文章标题}
-- **发表时间**：{YYYY Mon}
-- **期刊**：{期刊名}（IF ~{xx}，JCR Q1）
-- **链接**：[PMC ID](URL) 或 [DOI](URL)
-- **简介**：{中文简介}**意义**：{意义}
-
----
-
-## 附录：链接验证结果
-
-| 文章 | 原始链接 | 验证状态 | 最终链接 |
-|------|---------|---------|---------|
-| 标题1 | PMC:xxx | ✅ 200 | PMC:xxx |
-| 标题2 | PMC:xxx | ⚠️ 403→DOI | https://doi.org/xxx |
-| 标题3 | PMC:xxx | ❌ 失效 | 已删除 |
 ```
 
-**创建完成后**：回显文档 URL。
+**折叠模块语法（飞书原生）：**
+- 英文折叠：`<block type="details"><properties collapsed="false"><text>▼ 英文原文（点击展开）</text></properties><children>...</children></block>`
+- 中文折叠：`<block type="details"><properties collapsed="true"><text>▼ 中文全文（点击展开）</text></properties><children>...</children></block>`
+- `collapsed="false"` = 默认展开；`collapsed="true"` = 默认折叠
+- `children` 内可嵌套 `heading`（标题）、`paragraph`（段落）等 block
 
 ---
 
 #### 5B · 直接回复格式（Markdown，对话内展示）
 
-回复格式与飞书文档结构一致，但：
-- 飞书 Markdown 不支持复杂表格时，使用 bullet list 替代
-- 链接格式必须可点击
-- 每批输出完成后，主动告知链接验证结果汇总
+回复格式与飞书文档结构一致，但不含折叠详情块（对话仅展示结构化摘要）。
 
 ---
 
@@ -213,8 +192,9 @@ done
 2. **链接 100% 验证**：输出前必须逐条验证，不合格链接不得写入正文
 3. **简介与原文一致**：基于摘要整理，内容必须与原文一致，发现冲突必须修正或删除
 4. **分区标注清晰**：同时给出 JCR 分区（Q1）和中科院分区（1 区），两个体系独立成模块
-5. **数量控制**：默认 10 篇，最多不超过 20 篇；超过分批交付
+5. **数量控制**：每模块默认 15 篇，最多不超过 20 篇
 6. **双输出强制**：必须同时执行飞书文档创建 + 直接回复，不得只选其一
+7. **中英双语折叠**：英文默认展开，中文默认折叠，使用飞书原生 `<block type="details">` 语法
 
 ---
 
@@ -229,7 +209,8 @@ done
 
 ## 技术备注
 
-- 链接验证使用 `curl -s -o /dev/null -w "%{http_code}" -L --max-time 10`
-- PMC 链接格式：`https://pmc.ncbi.nlm.nih.gov/articles/PMC{ID}`
-- DOI 格式：`https://doi.org/10.xxxx/xxxxx`
-- 出版社官网优先顺序：Nature.com > Lancet.com > Wiley > Springer
+- 链接验证：`curl -s -o /dev/null -w "%{http_code}" -L --max-time 10`
+- PMC 全文获取：`web_fetch` 抓取 PMC 文章页，提取 Abstract/全文段落
+- 中文翻译：基于英文摘要/全文进行专业学术翻译，保留原文学术术语
+- 飞书折叠语法：`<block type="details">` + `collapsed` 属性 + `children` 内容块
+- 折叠内 block 类型：`heading`（标题）、`paragraph`（段落）
