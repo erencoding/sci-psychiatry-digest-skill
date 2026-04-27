@@ -1,49 +1,35 @@
 ---
 name: sci-psychiatry-digest
 description: 收集 SCI 一区（JCR Q1）心理学/精神病学领域的最新高影响因子文献
-version: "2.5"
+version: "2.7"
 author: Judy (朱迪)
 license: MIT
 ---
 
-# SCI 一区心理精神科文献速递 Skill (v2.5)
+# SCI 一区心理精神科文献速递 Skill (v2.7)
 
 ## ⚠️ 飞书文档权限处理（必读！）
 
-创建文档时必须确保用户（曹俊，open_id: `ou_13198dff86df39f443084c8dc460d89f`）能够编辑，**二选一**：
+创建文档时必须确保：① 文档有正确标题 ② 用户有编辑权限。
 
-### 方案一：以用户身份创建（推荐）
-
-```bash
-lark-cli docs +create \
-  --api-version v2 \
-  --title "文档标题" \
-  --doc-format markdown \
-  --as user \
-  --content "$(cat content.md)"
-```
-
-**`--as user`** 标志让文档以用户身份创建，用户直接获得所有者权限，可正常编辑和分享。
-
-### 方案二：机器人身份创建后授予编辑权限
+### 正确创建方式（必须同时满足两点！）
 
 ```bash
-# Step 1: 创建文档（机器人身份）
+# Step 1: 创建文档（使用 v1 API，v2 没有 --title 参数！）
 lark-cli docs +create \
-  --api-version v2 \
-  --title "文档标题" \
-  --doc-format markdown \
-  --content "$(cat content.md)"
+  --title "SCI 一区心理精神科文献速递 · {YYYY-MM-DD}" \
+  --markdown @content.md \
+  --doc-format markdown
 
-# Step 2: 授予用户 full_access 权限（Doc ID 从 Step 1 返回中提取）
+# Step 2: 立即授予用户编辑权限（Doc ID 从 Step 1 返回的 doc_id 字段提取）
 lark-cli drive permission.members create \
   --params '{"token":"DOC_ID","type":"docx"}' \
   --data '{"member_id":"ou_13198dff86df39f443084c8dc460d89f","member_type":"openid","perm":"full_access","type":"user"}' \
   --as bot
 ```
 
-> 🚫 **禁止**：仅用机器人身份创建文档而不授予权限——用户只能查看，不能编辑。
-> ✅ **正确做法**：始终使用 `--as user` 或创建后立即授予 `full_access` 权限。
+> ⚠️ **v2 API 陷阱**：`--api-version v2` 的 `docs +create` 没有 `--title` 参数！创建出来的文档标题永远是 "Untitled"。必须用 v1 API（`--title` 在 v1 下有效）。
+> 🚫 **禁止**：① 用 v2 创建导致无标题 ② 不授予权限就走人。
 
 ---
 
@@ -162,17 +148,24 @@ done
 
 **文档结构**：模块一（中科院 1 区）+ 模块二（JCR Q1）+ 附录（链接验证结果 + 期刊 IF 参考）
 
-**⚠️ 关键步骤**：创建文档后**必须立即**授予用户 full_access 权限：
+**⚠️ 关键步骤**：
 
 ```bash
-# DOC_ID 从创建文档的返回中获取
+# Step 1: 创建文档（用 v1 API 才能设置标题！）
+lark-cli docs +create \
+  --title "SCI 一区心理精神科文献速递 · {YYYY-MM-DD}" \
+  --markdown @content.md \
+  --doc-format markdown
+
+# Step 2: 立即授予用户 full_access 权限（从 Step 1 返回的 doc_id 提取）
 lark-cli drive permission.members create \
   --params '{"token":"DOC_ID","type":"docx"}' \
   --data '{"member_id":"ou_13198dff86df39f443084c8dc460d89f","member_type":"openid","perm":"full_access","type":"user"}' \
   --as bot
 ```
 
-> 🚫 **禁止**：创建文档后不授予权限就走人。用户将只有阅读权限，无法编辑。
+> ⚠️ **v1 API 必须**：v2 API 的 `docs +create` 没有 `--title` 参数，文档会变成 "Untitled"！
+> 🚫 **禁止**：创建后不授予权限就走人。
 
 #### 6B · 直接回复
 
