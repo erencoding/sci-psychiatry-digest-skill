@@ -35,11 +35,11 @@ lark-cli docs +create \
   --doc-format markdown \
   --content "$(cat content.md)"
 
-# Step 2: 授予用户编辑权限
-lark-cli docs +update-perm \
-  --doc DOC_ID \
-  --actor ou_13198dff86df39f443084c8dc460d89f \
-  --perm full_access
+# Step 2: 授予用户 full_access 权限（Doc ID 从 Step 1 返回中提取）
+lark-cli drive permission.members create \
+  --params '{"token":"DOC_ID","type":"docx"}' \
+  --data '{"member_id":"ou_13198dff86df39f443084c8dc460d89f","member_type":"openid","perm":"full_access","type":"user"}' \
+  --as bot
 ```
 
 > 🚫 **禁止**：仅用机器人身份创建文档而不授予权限——用户只能查看，不能编辑。
@@ -162,7 +162,17 @@ done
 
 **文档结构**：模块一（中科院 1 区）+ 模块二（JCR Q1）+ 附录（链接验证结果 + 期刊 IF 参考）
 
-**⚠️ 重要**：创建时必须使用 `--as user` 参数，或创建后授予用户 `full_access` 权限（见上文「飞书文档权限处理」章节）。
+**⚠️ 关键步骤**：创建文档后**必须立即**授予用户 full_access 权限：
+
+```bash
+# DOC_ID 从创建文档的返回中获取
+lark-cli drive permission.members create \
+  --params '{"token":"DOC_ID","type":"docx"}' \
+  --data '{"member_id":"ou_13198dff86df39f443084c8dc460d89f","member_type":"openid","perm":"full_access","type":"user"}' \
+  --as bot
+```
+
+> 🚫 **禁止**：创建文档后不授予权限就走人。用户将只有阅读权限，无法编辑。
 
 #### 6B · 直接回复
 
