@@ -1,12 +1,51 @@
 ---
 name: sci-psychiatry-digest
-description: 收集 SCI 一区（JCR Q1）心理学/精神病学领域的最新高影响因子文献，自动整理成含「文章标题 / 期刊 / 影响因子 / 源链接 / 中文简介」的结构化清单，并以飞书文档形式输出。所有链接在输出前必须经过验证，确保可正常访问。触发词示例：「给我 SCI 一区心理精神科的文章」「心理学 Q1 期刊最新论文」「精神病学高 IF 文献速递」「中科院一区心理精神科文献」。
-version: "2.4"
+description: 收集 SCI 一区（JCR Q1）心理学/精神病学领域的最新高影响因子文献
+version: "2.5"
 author: Judy (朱迪)
 license: MIT
 ---
 
-# SCI 一区心理精神科文献速递 Skill (v2.4)
+# SCI 一区心理精神科文献速递 Skill (v2.5)
+
+## ⚠️ 飞书文档权限处理（必读！）
+
+创建文档时必须确保用户（曹俊，open_id: `ou_13198dff86df39f443084c8dc460d89f`）能够编辑，**二选一**：
+
+### 方案一：以用户身份创建（推荐）
+
+```bash
+lark-cli docs +create \
+  --api-version v2 \
+  --title "文档标题" \
+  --doc-format markdown \
+  --as user \
+  --content "$(cat content.md)"
+```
+
+**`--as user`** 标志让文档以用户身份创建，用户直接获得所有者权限，可正常编辑和分享。
+
+### 方案二：机器人身份创建后授予编辑权限
+
+```bash
+# Step 1: 创建文档（机器人身份）
+lark-cli docs +create \
+  --api-version v2 \
+  --title "文档标题" \
+  --doc-format markdown \
+  --content "$(cat content.md)"
+
+# Step 2: 授予用户编辑权限
+lark-cli docs +update-perm \
+  --doc DOC_ID \
+  --actor ou_13198dff86df39f443084c8dc460d89f \
+  --perm full_access
+```
+
+> 🚫 **禁止**：仅用机器人身份创建文档而不授予权限——用户只能查看，不能编辑。
+> ✅ **正确做法**：始终使用 `--as user` 或创建后立即授予 `full_access` 权限。
+
+---
 
 ## 目标
 为用户一次性产出一份结构化、可复制的 **SCI 一区（JCR Q1 / 中科院 1 区）心理学/精神病学** 高影响因子文献清单，每篇文章包含：
@@ -24,19 +63,16 @@ license: MIT
 
 ## 触发条件
 当用户表达以下意图时启用：
-- "收集 SCI 一区心理/精神科文章"
+- "给我 SCI 一区心理精神科的文章"
 - "心理学 / 精神病学 Q1 / 一区 期刊最新论文"
 - "高影响因子 精神病学 / 心理学 文献速递"
 - "中科院一区心理精神科文献"
-- "帮我整理心理学顶刊文章"
 
 ---
 
 ## 执行流程
 
 ### Step 1 · 明确用户偏好（若未给出）
-
-快速确认以下参数，若用户未说明则使用默认值：
 
 | 参数 | 默认值 | 可选值 |
 |------|--------|--------|
@@ -49,181 +85,96 @@ license: MIT
 
 ### Step 2 · 检索顶刊列表
 
-#### JCR Q1 期刊（优先覆盖）
-
-| 期刊 | IF (2024 JCR) | 分区 |
-|------|---------------|------|
-| World Psychiatry | ~73 | Q1 / 精神病学 Top1 |
-| The Lancet Psychiatry | ~30 | Q1 / 临床神经科学 Top1 |
-| JAMA Psychiatry | ~25 | Q1 / 临床神经科学 |
-| American Journal of Psychiatry | ~14 | Q1 |
-| Molecular Psychiatry | ~10 | Q1 |
-| Neuropsychopharmacology | ~7 | Q1 |
-| Psychological Medicine | ~7 | Q1 |
-| Biological Psychiatry | ~9 | Q1 |
-| Translational Psychiatry | ~6.8 | Q1 |
-| Schizophrenia Bulletin | ~5 | Q1 |
-
-#### 中科院 1 区期刊（优先覆盖）
-
-| 期刊 | 中科院分区 | IF (2024 JCR) |
-|------|-----------|---------------|
-| World Psychiatry | 1区 精神病学 | ~73 |
-| The Lancet Psychiatry | 1区 临床神经科学 | ~30 |
-| JAMA Psychiatry | 1区 临床神经科学 | ~25 |
-| Nature Human Behaviour | 1区 心理学 | ~27 |
-| Psychological Medicine | 1区 临床心理学 | ~7 |
-| Molecular Psychiatry | 2区（参考） | ~10 |
+| 期刊 | IF (2024 JCR) | JCR 分区 | 中科院分区 |
+|------|--------------|---------|-----------|
+| World Psychiatry | ~73 | Q1 | 1区 Top |
+| The Lancet Psychiatry | ~30 | Q1 | 1区 |
+| JAMA Psychiatry | ~25 | Q1 | 1区 |
+| American Journal of Psychiatry | ~14 | Q1 | 1区 |
+| Molecular Psychiatry | ~10 | Q1 | 2区参考 |
+| Neuropsychopharmacology | ~7 | Q1 | 1区 |
+| Psychological Medicine | ~7 | Q1 | 1区 |
+| Biological Psychiatry | ~9 | Q1 | 1区 |
+| Translational Psychiatry | ~6.8 | Q1 | 2区参考 |
+| Schizophrenia Bulletin | ~5 | Q1 | Q1 |
 
 ---
 
-### Step 3 · 采集文章信息
-
-对每篇文章必须收集并校验以下字段：
-
-| 字段 | 要求 | 说明 |
-|------|------|------|
-| 标题 | 必填 | 英文原题，不得简写 |
-| 期刊 | 必填 | 官方刊名 + 缩写 |
-| IF | 必填 | 2024 JCR 版本，注明"IF ~xx" |
-| 分区 | 必填 | JCR Q1 + 中科院分区（如有） |
-| 发表时间 | 必填 | 期刊官方出版日期（年/月） |
-| 源链接 | 必填 | PMC 链接 或 DOI，格式必须可点击 |
-| 中文简介 | 必填 | 含研究设计、样本、主要发现、意义 |
-
----
-
-### Step 4 · ⚠️ 验证所有链接（关键步骤）
-
-**在写入文档之前，必须验证每一条链接：**
+### Step 3 · EUtils API 检索命令模板
 
 ```bash
-for url in "PMC_URL_1" "PMC_URL_2" "DOI_URL"; do
+# 检索某期刊近1年文章
+TERM="JOURNAL_NAME[journal]%20AND%202025[pdat]"
+curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term=$TERM&retmax=20&retmode=json"
+
+# 获取文章摘要
+curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMCID&retmode=text&rettype=medline"
+```
+
+---
+
+### Step 4 · 采集文章信息
+
+| 字段 | 要求 |
+|------|------|
+| 标题 | 英文原题，不得简写 |
+| 期刊 | 官方刊名 + 缩写 |
+| IF | 2024 JCR 版本，注明"IF ~xx" |
+| 分区 | JCR Q1 + 中科院分区（如有） |
+| 发表时间 | 期刊官方出版日期（年/月） |
+| 源链接 | PMC 链接 或 DOI，格式必须可点击 |
+| 中文简介 | 含研究设计、样本、主要发现、意义，100-180 字 |
+
+---
+
+### Step 5 · ⚠️ 验证所有链接
+
+```bash
+for url in "PMC_URL_1" "DOI_URL"; do
   code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 10 "$url")
   echo "$code $url"
 done
 ```
 
-**验证结果处理规则**：
-
 | HTTP 状态码 | 处理方式 |
 |-------------|---------|
 | 200 OK | ✅ 直接使用 |
-| 403 Forbidden | ⚠️ PMC Embargo，**必须替换**为 DOI 官方链接 |
-| 404 Not Found | ❌ 链接失效，**必须删除**或替换为 DOI |
-| 30x Redirect | 🔄 跟随重定向取最终 URL |
-| Timeout/Error | ❌ 链接不可用，**必须删除**或标注"需手动访问" |
+| 403 Forbidden | ⚠️ PMC Embargo，必须替换为 DOI |
+| 404 Not Found | ❌ 删除或标注"需手动访问" |
 
 ---
 
-### Step 5 · 输出（同时输出到飞书文档 + 直接回复）
+### Step 6 · 双输出（飞书文档 + 直接回复）
 
-**必须同时执行以下两个输出动作，缺一不可：**
-
-#### 5A · 飞书文档格式（精确模板）
+#### 6A · 飞书文档格式
 
 **标题**：`SCI 一区心理精神科文献速递 · {YYYY-MM-DD}`
 
-**文档结构**：
+**文档结构**：模块一（中科院 1 区）+ 模块二（JCR Q1）+ 附录（链接验证结果 + 期刊 IF 参考）
 
-```
-# SCI 一区心理精神科文献速递 · {YYYY-MM-DD}
+**⚠️ 重要**：创建时必须使用 `--as user` 参数，或创建后授予用户 `full_access` 权限（见上文「飞书文档权限处理」章节）。
 
-> **数据来源说明**：本文献清单分为两个独立模块，分别按照**JCR Q1 分区**和**中科院 1 区（CAS 1）分区**两个体系收录，两个体系分类标准和期刊覆盖范围存在差异，文献不重复。
-> **IF 版本**：以 2024 JCR / 2025 发布版本为准
-> **时间窗**：{时间范围}
-> **共收录**：模块一 N 篇 + 模块二 N 篇
+#### 6B · 直接回复
 
----
-
-# 【模块一】中科院 1 区心理精神科期刊（CAS 1）
-
-> **说明**：以下期刊经中科院 2025 年期刊分区表确认，属于中科院 1 区（Top 期刊）。
-> **收录**：N 篇
-
----
-
-## 一、{期刊名}（中科院 1 区 · {细分领域}）
-
-### N.N {文章标题}
-- **发表时间**：{YYYY Mon}
-- **期刊**：{期刊名}（中科院 1 区，IF {xx}）
-- **链接**：[PMC ID](URL) 或 [DOI](URL)
-- **简介**：{中文简介 100-180 字}
-
----
-
-# 【模块二】JCR Q1 心理精神科期刊
-
-> **说明**：以下期刊按 JCR Q1 分区收录，与中科院 1 区分类体系不同。
-> **收录**：N 篇
-
----
-
-## 一、{期刊名}（IF ~{xx}，JCR Q1）
-
-### N.N {文章标题}
-- **发表时间**：{YYYY Mon}
-- **期刊**：{期刊名}（IF ~{xx}，JCR Q1）
-- **链接**：[PMC ID](URL) 或 [DOI](URL)
-- **简介**：{中文简介 100-180 字}
-
----
-
-## 附录：链接验证结果
-
-| 文章 | 原始链接 | 验证状态 | 最终链接 |
-|------|---------|---------|---------|
-| 标题1 | PMC:xxx | ✅ 200 | PMC:xxx |
-| 标题2 | PMC:xxx | ⚠️ 403→DOI | https://doi.org/xxx |
-| 标题3 | PMC:xxx | ❌ 失效 | 已删除 |
-
-### 期刊 IF 参考（2024 JCR / 2025 中科院）
-| 期刊 | IF | JCR | 中科院 |
-|------|----|----|-------|
-| ... | ... | Q1 | 1区 |
-```
-
----
-
-#### 5B · 直接回复格式（Markdown，对话内展示）
-
-回复格式与飞书文档结构一致，每篇文章包含：
-- 标题、发表时间、期刊、IF
-- 链接（可点击）
-- 中文简介
-
----
-
-### Step 6 · 兜底与退化
-
-- **飞书文档创建失败**：仍然必须输出到对话，直接回复 Markdown 格式，同样遵循链接验证规则
-- **DOI 也失效**：删除该条链接，在简介末尾标注「⚠️ 原文链接暂时不可访问，建议通过期刊官网检索」
+每篇文章：标题 / 发表时间 / 期刊 / IF / 链接 / 中文简介
 
 ---
 
 ## 质量要求
 
-1. **IF 版本一致**：同一次输出使用同一 JCR 年度（2024 JCR / 2025 版），并在附录注明
-2. **链接 100% 验证**：输出前必须逐条验证，不合格链接不得写入正文
-3. **简介与原文一致**：基于摘要整理，内容必须与原文一致，发现冲突必须修正或删除
-4. **分区标注清晰**：同时给出 JCR 分区（Q1）和中科院分区（1 区），两个体系独立成模块
-5. **数量控制**：每模块默认 15 篇，最多不超过 20 篇
-6. **双输出强制**：必须同时执行飞书文档创建 + 直接回复，不得只选其一
-
----
-
-## 交互风格
-
-- 语言：中文
-- 语气：专业、简洁、学术
-- 每批输出完成后，主动告知链接验证结果（✅ OK / ⚠️ DOI 替换 / ❌ 已删除）
-- 用户追加「增加数量」「更换期刊」「细化方向」时，仅做增量检索，不重复已有条目
+1. **IF 版本一致**：同一次输出使用同一 JCR 年度，并在附录注明
+2. **链接 100% 验证**：不合格链接不得写入正文
+3. **简介与原文一致**：发现冲突必须修正或删除
+4. **分区标注清晰**：JCR Q1 + 中科院分区，两个体系独立成模块
+5. **双输出强制**：必须同时执行飞书文档创建 + 直接回复
+6. **权限必处理**：文档创建时必须使用 `--as user` 或创建后授予权限
 
 ---
 
 ## 技术备注
 
+- EUtils esearch：`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term=TERM&retmax=20&retmode=json`
+- EUtils efetch：`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id={PMCID}&retmode=text&rettype=medline`
+- PubMed 链接：`https://pubmed.ncbi.nlm.nih.gov/{PMID}/`
 - 链接验证：`curl -s -o /dev/null -w "%{http_code}" -L --max-time 10`
-- PMC 链接格式：`https://pmc.ncbi.nlm.nih.gov/articles/PMC{ID}`
-- DOI 格式：`https://doi.org/10.xxxx/xxxxx`
+- 用户 open_id：`ou_13198dff86df39f443084c8dc460d89f`（曹俊，固定值）
