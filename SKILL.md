@@ -100,7 +100,12 @@ lark-cli docs +update-perm \
 
 ---
 
-### Step 3 · EUtils API 检索命令模板
+### Step 3 · 文献检索方法（推荐，不强制）
+
+> **推荐使用 EUtils API 搜索 PubMed/PMC**，因为它能稳定访问，无需额外认证，且支持结构化检索。
+> **其他方式（如直接访问期刊官网、Web 抓取等）均可使用，以获取到真实文章为准。**
+
+#### 推荐：EUtils API
 
 ```bash
 # 检索某期刊近1年文章
@@ -110,6 +115,11 @@ curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pmc&term=
 # 获取文章摘要
 curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=PMCID&retmode=text&rettype=medline"
 ```
+
+#### 其他可选方式
+- 直接访问期刊官网搜索（如 Lancet Psychiatry、World Psychiatry 等）
+- Web 抓取期刊最新文章页面
+- 已有明确 PMC ID 时直接抓取：`https://pmc.ncbi.nlm.nih.gov/articles/PMC{ID}`
 
 ---
 
